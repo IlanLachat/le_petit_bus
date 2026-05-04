@@ -1,1 +1,349 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, minimal-ui">
+    <title>Le Petit Bus 🚌 - L'épreuve finale</title>
+    <style>
+        :root {
+            --primary: #ff2e63;
+            --secondary: #08d9d6;
+            --bg: #0f0f1a;
+            --card-bg: rgba(255, 255, 255, 0.05);
+            --gold: #ffcf33;
+        }
 
+        body {
+            font-family: 'Poppins', sans-serif;
+            background: radial-gradient(circle at center, #1b1b2f 0%, #0f0f1a 100%);
+            color: white; margin: 0; padding: 0; display: flex; flex-direction: column;
+            align-items: center; justify-content: center; min-height: 100vh; overflow-x: hidden; touch-action: manipulation;
+        }
+
+        .container {
+            width: 95%; max-width: 800px; padding: 20px; background: var(--card-bg);
+            backdrop-filter: blur(10px); border: 1px solid rgba(255,255,255,0.1);
+            border-radius: 20px; box-shadow: 0 15px 35px rgba(0,0,0,0.5);
+            text-align: center; position: relative; z-index: 10; margin: 15px auto;
+            box-sizing: border-box;
+        }
+
+        h1 { color: var(--primary); margin-bottom: 5px; text-transform: uppercase; letter-spacing: 2px;}
+        p { color: #ccc; margin-top: 0; }
+
+        /* Le Bus (Ligne de cartes) */
+        .bus-container {
+            display: flex; gap: 8px; justify-content: center; flex-wrap: wrap; margin: 20px 0;
+            min-height: 110px; padding: 10px;
+        }
+        .bus-card {
+            width: 65px; height: 95px; background: #2a2a40; border: 2px solid gray;
+            border-radius: 6px; background-size: cover !important; transition: all 0.3s ease;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.5); opacity: 0.7;
+        }
+        .active-card { 
+            transform: translateY(-10px) scale(1.1); 
+            border-color: var(--secondary); 
+            box-shadow: 0 10px 20px var(--secondary); 
+            opacity: 1; z-index: 5; 
+        }
+
+        /* Interface Paquet de cartes */
+        .deck-area {
+            display: flex; align-items: center; justify-content: center; gap: 15px; margin-bottom: 15px;
+            background: rgba(0,0,0,0.4); padding: 8px 15px; border-radius: 15px; display: inline-flex;
+        }
+        .deck-stack {
+            width: 40px; height: 60px; background: url('https://deckofcardsapi.com/static/img/back.png') center/cover;
+            border-radius: 4px; border: 1px solid white;
+        }
+        .deck-info { text-align: left; font-size: 14px; font-weight: bold; }
+
+        /* Contrôles d'Action */
+        .controls { display: flex; gap: 10px; justify-content: center; flex-wrap: wrap; margin-top: 10px; }
+        .btn-guess {
+            background: #1b1b2f; color: white; border: 2px solid var(--secondary); padding: 10px 15px;
+            border-radius: 12px; font-size: 14px; font-weight: bold; cursor: pointer; flex: 1; min-width: 90px;
+            display: flex; flex-direction: column; align-items: center; gap: 5px; transition: 0.2s;
+        }
+        .btn-guess span { font-size: 20px; }
+        .btn-guess:active { transform: scale(0.95); background: var(--secondary); color: black; }
+        .btn-equal { border-color: var(--primary); }
+        .btn-equal:active { background: var(--primary); color: white; }
+
+        /* Zone de Résultat du Tirage (Comparaison) */
+        .comparison-area {
+            background: rgba(0,0,0,0.6); border-radius: 15px; padding: 20px;
+            display: flex; flex-direction: column; align-items: center; border: 1px solid var(--primary);
+        }
+        .comp-cards { display: flex; align-items: center; gap: 20px; margin-bottom: 15px; }
+        .comp-card-wrap { display: flex; flex-direction: column; align-items: center; gap: 5px; font-size: 12px; color: gray;}
+        .comp-img { width: 70px; height: 100px; border-radius: 5px; box-shadow: 0 5px 15px rgba(0,0,0,0.8); }
+        .comp-op { font-size: 30px; font-weight: bold; color: var(--gold); }
+        .comp-text { font-size: 18px; font-weight: bold; margin-bottom: 15px; }
+
+        button.action-btn {
+            background: linear-gradient(45deg, var(--primary), #ff6b6b); color: white; border: none;
+            padding: 12px 25px; border-radius: 50px; font-weight: bold; font-size: 16px; cursor: pointer; width: 100%;
+        }
+
+        .hidden { display: none !important; }
+        .highlight { color: var(--gold); }
+    </style>
+</head>
+<body>
+
+    <!-- Écran de Configuration -->
+    <div id="setup" class="container">
+        <h1>🚌 LE PETIT BUS 🚌</h1>
+        <p>Tournez le téléphone. Remplissez les verres.</p>
+        <p>Combien de cartes pour la ligne ? (Généralement 5)</p>
+        <input type="number" id="bus-size" value="5" min="3" max="15" style="width: 50%; padding: 10px; border-radius: 10px; border: none; margin-bottom: 20px; text-align: center; font-size: 18px; font-weight: bold;">
+        <button class="action-btn" onclick="initGame()">Créer le Bus</button>
+    </div>
+
+    <!-- Écran de Jeu -->
+    <div id="game-area" class="container hidden">
+        
+        <div class="deck-area">
+            <div id="deck-visual" class="deck-stack"></div>
+            <div class="deck-info">
+                Tas : <span id="deck-count" class="highlight">36</span><br>
+                <span id="reshuffle-msg" style="color: var(--secondary); font-size: 12px; display: none;">🔄 Remélangé !</span>
+            </div>
+        </div>
+        
+        <div id="bus-container" class="bus-container">
+            <!-- Cartes du bus -->
+        </div>
+
+        <h3 id="instruction-text" style="margin: 5px 0 15px 0;">Étape 1 : Fais ton choix !</h3>
+
+        <!-- Boutons de choix -->
+        <div id="controls" class="controls">
+            <button class="btn-guess" onclick="makeGuess('lower')"><span>⬇️</span> Plus Petit</button>
+            <button class="btn-guess btn-equal" onclick="makeGuess('equal')"><span>🟰</span> Égalité<br><small>(Sortie directe)</small></button>
+            <button class="btn-guess" onclick="makeGuess('higher')"><span>⬆️</span> Plus Grand</button>
+        </div>
+
+        <!-- Zone de Comparaison (Cachée par défaut) -->
+        <div id="comparison-display" class="comparison-area hidden">
+            <div class="comp-cards">
+                <div class="comp-card-wrap">
+                    <span>Carte du Bus</span>
+                    <img id="comp-ref" class="comp-img" src="" />
+                </div>
+                <div id="comp-op" class="comp-op">VS</div>
+                <div class="comp-card-wrap">
+                    <span>Nouveau Tirage</span>
+                    <img id="comp-new" class="comp-img" src="" />
+                </div>
+            </div>
+            <div id="comp-result" class="comp-text">Tirage en cours...</div>
+            <button id="btn-resolve" class="action-btn hidden" onclick="resolveTurn()">Suivant</button>
+        </div>
+    </div>
+
+    <script>
+        // Jeu de 36 cartes (du 6 à l'As)
+        const cardSuits = ['S', 'D', 'H', 'C'];
+        const cardValues = [
+            { v: 6, c: '6' }, { v: 7, c: '7' }, { v: 8, c: '8' }, 
+            { v: 9, c: '9' }, { v: 10, c: '0' }, { v: 11, c: 'J' }, 
+            { v: 12, c: 'Q' }, { v: 13, c: 'K' }, { v: 14, c: 'A' }
+        ];
+
+        let deck = [];
+        let discardPile = [];
+        let busSize = 5;
+        let busSlots = []; // Contient { card: object, isFaceUp: boolean }
+        let currentSlot = 0;
+
+        // Variables temporaires pour le tour en cours
+        let pendingNewCard = null;
+        let pendingIsCorrect = false;
+        let pendingImmediateWin = false;
+        let pendingSips = 0;
+
+        function initGame() {
+            busSize = parseInt(document.getElementById('bus-size').value);
+            if (busSize < 3 || busSize > 15) return alert("Choisis un nombre de cartes entre 3 et 15.");
+            
+            document.getElementById('setup').classList.add('hidden');
+            document.getElementById('game-area').classList.remove('hidden');
+            
+            createDeck();
+            startBus();
+        }
+
+        function createDeck() {
+            deck = [];
+            discardPile = [];
+            for(let s of cardSuits) {
+                for(let val of cardValues) {
+                    deck.push({ value: val.v, code: val.c + s });
+                }
+            }
+            deck = deck.sort(() => Math.random() - 0.5);
+            updateDeckVisual();
+        }
+
+        function reshuffle() {
+            deck = discardPile.sort(() => Math.random() - 0.5);
+            discardPile = [];
+            
+            const msg = document.getElementById('reshuffle-msg');
+            msg.style.display = 'block';
+            setTimeout(() => msg.style.display = 'none', 3000);
+            updateDeckVisual();
+        }
+
+        function drawCard() {
+            if (deck.length === 0) reshuffle();
+            let card = deck.pop();
+            updateDeckVisual();
+            return card;
+        }
+
+        function updateDeckVisual() {
+            const count = deck.length;
+            document.getElementById('deck-count').innerText = count;
+            const visual = document.getElementById('deck-visual');
+            let layers = Math.ceil(count / 5);
+            let shadow = '';
+            for(let i = 1; i <= layers; i++) shadow += `${i}px ${i}px 0px #ccc${i === layers ? '' : ','}`;
+            visual.style.boxShadow = shadow || 'none';
+        }
+
+        function startBus() {
+            busSlots = [];
+            currentSlot = 0;
+            const container = document.getElementById('bus-container');
+            container.innerHTML = '';
+
+            // Distribuer les cartes face cachée
+            for(let i = 0; i < busSize; i++) {
+                busSlots.push({ card: drawCard(), isFaceUp: false });
+                
+                let div = document.createElement('div');
+                div.className = 'bus-card';
+                div.id = `bus-slot-${i}`;
+                div.style.background = "url('https://deckofcardsapi.com/static/img/back.png') center/cover";
+                container.appendChild(div);
+            }
+
+            updateHighlight();
+        }
+
+        function updateHighlight() {
+            document.querySelectorAll('.bus-card').forEach(el => el.classList.remove('active-card'));
+            document.getElementById(`bus-slot-${currentSlot}`).classList.add('active-card');
+            document.getElementById('instruction-text').innerText = `Étape ${currentSlot + 1} : Fais ton choix !`;
+        }
+
+        function makeGuess(guessType) {
+            let slot = busSlots[currentSlot];
+            let refCard = slot.card;
+
+            // 1. Basculer l'interface
+            document.getElementById('controls').classList.add('hidden');
+            document.getElementById('instruction-text').classList.add('hidden');
+            document.getElementById('comparison-display').classList.remove('hidden');
+            document.getElementById('btn-resolve').classList.add('hidden');
+
+            // 2. Retourner la carte du bus si elle était cachée
+            if (!slot.isFaceUp) {
+                slot.isFaceUp = true;
+                let domSlot = document.getElementById(`bus-slot-${currentSlot}`);
+                domSlot.style.background = `url('https://deckofcardsapi.com/static/img/${refCard.code}.png') center/cover`;
+            }
+
+            // Préparer l'affichage de comparaison
+            document.getElementById('comp-ref').src = `https://deckofcardsapi.com/static/img/${refCard.code}.png`;
+            document.getElementById('comp-new').src = 'https://deckofcardsapi.com/static/img/back.png';
+            document.getElementById('comp-op').innerText = 'VS';
+            document.getElementById('comp-result').innerText = 'Tirage en cours...';
+            document.getElementById('comp-result').style.color = "white";
+
+            // 3. Tirer la nouvelle carte après un petit suspense (600ms)
+            setTimeout(() => {
+                pendingNewCard = drawCard();
+                document.getElementById('comp-new').src = `https://deckofcardsapi.com/static/img/${pendingNewCard.code}.png`;
+
+                pendingIsCorrect = false;
+                pendingImmediateWin = false;
+                pendingSips = currentSlot + 1; // Gorgées = Étape actuelle (1 à N)
+
+                let opSymbol = '';
+
+                // Logique de comparaison
+                if (guessType === 'equal') {
+                    if (pendingNewCard.value === refCard.value) {
+                        pendingIsCorrect = true; pendingImmediateWin = true; opSymbol = '=';
+                    } else {
+                        opSymbol = pendingNewCard.value > refCard.value ? '>' : '<';
+                    }
+                } else if (guessType === 'higher') {
+                    if (pendingNewCard.value > refCard.value) pendingIsCorrect = true;
+                    opSymbol = pendingNewCard.value > refCard.value ? '>' : (pendingNewCard.value === refCard.value ? '=' : '<');
+                } else if (guessType === 'lower') {
+                    if (pendingNewCard.value < refCard.value) pendingIsCorrect = true;
+                    opSymbol = pendingNewCard.value < refCard.value ? '<' : (pendingNewCard.value === refCard.value ? '=' : '>');
+                }
+
+                document.getElementById('comp-op').innerText = opSymbol;
+
+                // Message de résultat
+                let resText = "";
+                if (pendingImmediateWin) {
+                    resText = "ÉGALITÉ PARFAITE ! Sortie directe ! 🎉";
+                    document.getElementById('comp-result').style.color = "#00b894";
+                } else if (pendingIsCorrect) {
+                    resText = "C'est juste ! On avance ! ✅";
+                    document.getElementById('comp-result').style.color = "#00b894";
+                } else {
+                    resText = `Faux ! Retour à la case départ.<br>Bois <b>${pendingSips} gorgée(s)</b> 🍻`;
+                    document.getElementById('comp-result').style.color = "#ff2e63";
+                }
+
+                document.getElementById('comp-result').innerHTML = resText;
+                document.getElementById('btn-resolve').classList.remove('hidden');
+
+            }, 600);
+        }
+
+        function resolveTurn() {
+            // Remettre l'interface normale
+            document.getElementById('comparison-display').classList.add('hidden');
+            document.getElementById('controls').classList.remove('hidden');
+            document.getElementById('instruction-text').classList.remove('hidden');
+
+            // La nouvelle carte écrase l'ancienne
+            discardPile.push(busSlots[currentSlot].card); // L'ancienne va dans la défausse
+            busSlots[currentSlot].card = pendingNewCard; // La nouvelle prend sa place
+            
+            let domSlot = document.getElementById(`bus-slot-${currentSlot}`);
+            domSlot.style.background = `url('https://deckofcardsapi.com/static/img/${pendingNewCard.code}.png') center/cover`;
+
+            // Résolution des déplacements
+            if (pendingImmediateWin) {
+                alert("🏆 VICTOIRE ! L'égalité t'a sauvé, tu quittes le bus !");
+                location.reload(); // Recommence le jeu pour le prochain
+            } 
+            else if (pendingIsCorrect) {
+                currentSlot++;
+                if (currentSlot === busSize) {
+                    alert("🏆 INCROYABLE ! Tu as traversé tout le bus. C'est fini pour toi !");
+                    location.reload();
+                } else {
+                    updateHighlight(); // Avance d'une case
+                }
+            } 
+            else {
+                currentSlot = 0; // Retour au début
+                updateHighlight();
+            }
+        }
+    </script>
+</body>
+</html>
