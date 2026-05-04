@@ -1,0 +1,497 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Le Petit Bus 🚌 - Édition Finale</title>
+    <style>
+        :root {
+            --primary: #ff2e63;
+            --secondary: #08d9d6;
+            --bg: #0f0f1a;
+            --card-bg: rgba(255, 255, 255, 0.05);
+            --gold: #ffcf33;
+        }
+
+        body {
+            font-family: 'Poppins', sans-serif;
+            background: radial-gradient(circle at center, #1b1b2f 0%, #0f0f1a 100%);
+            color: white; margin: 0; padding: 0; display: flex; flex-direction: column;
+            align-items: center; justify-content: center; min-height: 100vh; overflow: hidden; touch-action: none; 
+        }
+
+        .container {
+            width: 90%; max-width: 600px; padding: 20px; background: var(--card-bg);
+            backdrop-filter: blur(10px); border: 1px solid rgba(255,255,255,0.1);
+            border-radius: 20px; box-shadow: 0 15px 35px rgba(0,0,0,0.5);
+            text-align: center; position: relative; z-index: 10;
+        }
+
+        h1 { color: var(--primary); margin-bottom: 5px; font-size: 24px;}
+        p { color: #ccc; font-size: 14px; margin-top: 0; }
+
+        .card-wrap { display: flex; align-items: center; justify-content: center; gap: 10px; flex-wrap: wrap; margin: 15px 0; min-height: 140px; }
+        .old-card { width: 55px; border-radius: 6px; opacity: 0.7; }
+        .card-img { width: 110px; border-radius: 8px; box-shadow: 0 8px 20px rgba(0,0,0,0.6); }
+
+        /* Pyramide Horizontale */
+        #pyramid-screen { width: 100vw; height: 100vh; position: relative; }
+        .pyramid-wrapper {
+            position: absolute; top: 45%; left: 50%; transform: translate(-50%, -50%);
+            display: flex; flex-direction: row; align-items: center; justify-content: center; gap: 12px;
+        }
+        .pyramid-col { display: flex; flex-direction: column; gap: 10px; }
+        
+        .p-card {
+            width: 50px; height: 75px; background: linear-gradient(135deg, #2c3e50, #000);
+            border: 2px solid var(--gold); border-radius: 5px; background-size: cover !important;
+            position: relative; transition: all 0.3s ease; opacity: 0.6;
+        }
+        .horizontal { border-color: var(--primary); transform: rotate(90deg); margin: 15px 0; }
+        .active-p-card { opacity: 1; box-shadow: 0 0 20px var(--secondary); transform: scale(1.15); z-index: 5; border-color: var(--secondary); }
+        .active-p-card.horizontal { transform: rotate(90deg) scale(1.15); }
+
+        .stacked-card {
+            position: absolute; width: 100%; height: 100%; border-radius: 5px; border: 1px solid #fff;
+            background-size: cover !important; box-shadow: 2px 2px 5px rgba(0,0,0,0.8); pointer-events: none;
+        }
+
+        /* Navigation Pyramide */
+        #pyramid-nav {
+            position: absolute; bottom: 20px; left: 50%; transform: translateX(-50%);
+            display: flex; gap: 20px; z-index: 50;
+        }
+        .nav-btn {
+            background: var(--card-bg); border: 2px solid var(--secondary); color: white;
+            width: 60px; height: 60px; border-radius: 50%; font-size: 24px; cursor: pointer;
+            backdrop-filter: blur(5px); display: flex; align-items: center; justify-content: center;
+        }
+        .nav-btn:active { background: var(--secondary); color: black; }
+
+        /* Docks Joueurs */
+        .player-dock {
+            position: absolute; background: rgba(0, 0, 0, 0.75); border: 1px solid var(--secondary);
+            border-radius: 12px; padding: 8px; display: flex; flex-direction: column; align-items: center;
+            cursor: grab; z-index: 20; backdrop-filter: blur(5px);
+        }
+        .dock-name { font-size: 11px; font-weight: bold; color: var(--secondary); margin-bottom: 4px; pointer-events: none; }
+        .dock-cards { display: flex; gap: 4px; pointer-events: auto; }
+        .dock-card {
+            width: 30px; height: 45px; background: #2a2a40; border: 1px solid white; border-radius: 4px;
+            display: flex; align-items: center; justify-content: center; font-size: 12px; font-weight: bold; cursor: pointer;
+        }
+        .dock-card.played { opacity: 0; pointer-events: none; }
+
+        /* Memo Hand */
+        .memo-big-card {
+            width: 65px; height: 95px; background: #2a2a40; border: 2px solid white; border-radius: 6px;
+            display: flex; align-items: center; justify-content: center; font-size: 18px; font-weight: bold; cursor: pointer; transition: 0.2s;
+        }
+        .memo-big-card.selected { border-color: var(--secondary); box-shadow: 0 0 15px var(--secondary); transform: translateY(-10px); }
+
+        /* Modals */
+        .modal-overlay {
+            position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: rgba(0,0,0,0.9);
+            z-index: 100; display: flex; align-items: center; justify-content: center;
+        }
+        .modal-box {
+            background: #1b1b2f; padding: 20px; border-radius: 15px; border: 2px solid var(--primary);
+            width: 80%; max-width: 350px; text-align: center; color: white;
+        }
+        
+        button {
+            background: linear-gradient(45deg, var(--primary), #ff6b6b); color: white; border: none; padding: 10px 20px;
+            border-radius: 50px; font-weight: bold; font-size: 14px; cursor: pointer; width: 100%; margin-top: 10px;
+        }
+        button.target-btn { background: #2a2a40; border: 1px solid var(--secondary); margin-top: 5px; }
+        button.accept { background: #00b894; }
+        button.lie { background: #d63031; }
+
+        .hidden { display: none !important; }
+        .highlight { color: var(--secondary); font-weight: bold; }
+        .mode-active { background: var(--secondary) !important; color: black !important; }
+    </style>
+</head>
+<body>
+
+    <div id="setup" class="container">
+        <h1>LE PETIT BUS 🚌</h1>
+        <p>Jeu de 36 cartes. Tournez le téléphone.</p>
+        <input type="text" id="player-names" placeholder="Ex: Alex, Tom, Julie" style="width: 80%; padding: 10px; border-radius: 10px; border: none; margin-bottom: 10px; text-align: center;">
+        <button onclick="initGame()">Commencer</button>
+    </div>
+
+    <div id="distrib" class="container hidden">
+        <h3 id="distrib-player" class="highlight">Joueur 1</h3>
+        <p id="distrib-question">Rouge ou Noir ?</p>
+        <div id="card-wrap" class="card-wrap">
+            <img id="main-card" src="https://deckofcardsapi.com/static/img/back.png" class="card-img" alt="Carte">
+        </div>
+        <button id="btn-reveal" onclick="revealCard()">Tirer la carte</button>
+        <button id="btn-next" class="hidden" style="background: var(--secondary); color: black;" onclick="nextStep()">Suivant →</button>
+    </div>
+
+    <div id="memory" class="container hidden">
+        <h2 style="margin-bottom: 5px;">Dernier Check</h2>
+        <h3 id="memo-player-name" class="highlight" style="margin-top: 0;">Nom</h3>
+        
+        <div style="display: flex; gap: 10px; justify-content: center; margin-bottom: 15px;">
+            <button id="btn-mode-swap" class="mode-active" style="width: auto; margin:0; pointer-events: none;">🔄 Échanger</button>
+        </div>
+
+        <div id="memo-hand" class="card-wrap"></div>
+        <button onclick="nextMemoryPlayer()" style="margin-top: 20px;">Joueur suivant</button>
+    </div>
+
+    <div id="pyramid-screen" class="hidden">
+        <div id="pyramid-area" class="pyramid-wrapper"></div>
+        <div id="pyramid-nav">
+            <div class="nav-btn" onclick="prevPyramidCard()">⬅️</div>
+            <div class="nav-btn" onclick="nextPyramidCard()">➡️</div>
+        </div>
+    </div>
+
+    <!-- Modals -->
+    <div id="modal-target" class="modal-overlay hidden">
+        <div class="modal-box">
+            <h2 id="target-title" style="margin-top:0;">Qui boit ?</h2>
+            <div id="target-list"></div>
+            <button onclick="closeModals()" style="background: transparent; border: 1px solid gray;">Annuler</button>
+        </div>
+    </div>
+
+    <div id="modal-reaction" class="modal-overlay hidden">
+        <div class="modal-box">
+            <h2 id="reaction-title" style="color: var(--primary); margin-top:0;">Attention !</h2>
+            <p id="reaction-desc"></p>
+            <div style="display: flex; gap: 10px;">
+                <button class="accept" onclick="handleReaction(true)">Accepter</button>
+                <button class="lie" onclick="handleReaction(false)">TU MENS</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="modal-result" class="modal-overlay hidden">
+        <div class="modal-box">
+            <h1 id="result-title" style="margin-top:0; font-size: 28px;">RÉSULTAT</h1>
+            <div id="result-card-display" style="margin: 10px 0; min-height: 80px;"></div>
+            <p id="result-desc" style="font-size: 16px;"></p>
+            <button onclick="closeResult()">Continuer</button>
+        </div>
+    </div>
+
+    <script>
+        let players = [];
+        let deck = [];
+        let currentPlayerIdx = 0;
+        
+        // Variables Pyramide
+        let pyramidSequence = []; 
+        let currentPyramidIdx = -1;
+        let lastPlayedThisTurn = []; 
+        let actionState = { attackerIdx: null, cardIdx: null, targetIdx: null };
+        
+        // Variables Mémoire
+        let swapSelection = null; 
+
+        const cardValues = ['6','7','8','9','10','J','Q','K','A'];
+        const cardSuits = ['S', 'D', 'H', 'C'];
+        const questions = ["1. Rouge ou Noir ?", "2. Plus grand / plus petit ?", "3. Quel signe ?", "4. Numéro exact ?"];
+
+        function initGame() {
+            const names = document.getElementById('player-names').value.split(',');
+            if(names.length < 1 || names[0] === "") return alert("Ajoute des joueurs !");
+            players = names.map(n => ({ name: n.trim(), hand: [] }));
+            createDeck();
+            document.getElementById('setup').classList.add('hidden');
+            document.getElementById('distrib').classList.remove('hidden');
+            updateDistribUI();
+        }
+
+        function createDeck() {
+            deck = [];
+            for(let s of cardSuits) for(let v of cardValues) deck.push({ v, s, code: v+s });
+            deck = deck.sort(() => Math.random() - 0.5);
+        }
+
+        function updateDistribUI() {
+            const p = players[currentPlayerIdx];
+            document.getElementById('distrib-player').innerText = p.name;
+            document.getElementById('distrib-question').innerText = questions[p.hand.length];
+            const wrap = document.getElementById('card-wrap');
+            wrap.innerHTML = '';
+            p.hand.forEach(c => {
+                let img = document.createElement('img');
+                img.src = `https://deckofcardsapi.com/static/img/${c.code.replace('10','0')}.png`;
+                img.className = 'old-card'; wrap.appendChild(img);
+            });
+            let main = document.createElement('img');
+            main.id = 'main-card'; main.src = 'https://deckofcardsapi.com/static/img/back.png'; main.className = 'card-img';
+            wrap.appendChild(main);
+            document.getElementById('btn-reveal').classList.remove('hidden');
+            document.getElementById('btn-next').classList.add('hidden');
+        }
+
+        function revealCard() {
+            const c = deck.pop();
+            players[currentPlayerIdx].hand.push({ ...c, played: false });
+            document.getElementById('main-card').src = `https://deckofcardsapi.com/static/img/${c.code.replace('10','0')}.png`;
+            document.getElementById('btn-reveal').classList.add('hidden');
+            document.getElementById('btn-next').classList.remove('hidden');
+        }
+
+        function nextStep() {
+            currentPlayerIdx++;
+            if(currentPlayerIdx >= players.length) {
+                currentPlayerIdx = 0;
+                if(players[players.length-1].hand.length === 4) return startMemoryPhase();
+            }
+            updateDistribUI();
+        }
+
+        // ==========================
+        // PHASE MÉMOIRE
+        // ==========================
+        function startMemoryPhase() {
+            document.getElementById('distrib').classList.add('hidden');
+            document.getElementById('memory').classList.remove('hidden');
+            currentPlayerIdx = 0;
+            swapSelection = null;
+            renderMemoryHand();
+        }
+
+        function renderMemoryHand() {
+            const p = players[currentPlayerIdx];
+            document.getElementById('memo-player-name').innerText = p.name;
+            const container = document.getElementById('memo-hand');
+            container.innerHTML = '';
+            
+            p.hand.forEach((c, i) => {
+                const div = document.createElement('div');
+                div.className = 'memo-big-card';
+                // Cartes visibles par défaut
+                div.style.background = `url(https://deckofcardsapi.com/static/img/${c.code.replace('10','0')}.png) center/cover`;
+                div.innerText = "";
+                
+                if(swapSelection === i) div.classList.add('selected');
+
+                div.onclick = () => {
+                    if(swapSelection === null) {
+                        swapSelection = i;
+                        renderMemoryHand(); // Met en surbrillance
+                    } else {
+                        // Échange les cartes dans le tableau
+                        let temp = p.hand[swapSelection];
+                        p.hand[swapSelection] = p.hand[i];
+                        p.hand[i] = temp;
+                        swapSelection = null;
+                        renderMemoryHand(); // Rafraîchit l'affichage
+                    }
+                };
+                container.appendChild(div);
+            });
+        }
+
+        function nextMemoryPlayer() {
+            currentPlayerIdx++;
+            if(currentPlayerIdx >= players.length) generatePyramidGame();
+            else { swapSelection = null; renderMemoryHand(); }
+        }
+
+        // ==========================
+        // PHASE PYRAMIDE
+        // ==========================
+        function generatePyramidGame() {
+            document.getElementById('memory').classList.add('hidden');
+            document.getElementById('pyramid-screen').classList.remove('hidden');
+            
+            const area = document.getElementById('pyramid-area');
+            let tempDeck = deck.length, cols = 0;
+            while(tempDeck >= cols + 1) { cols++; tempDeck -= cols; }
+
+            pyramidSequence = [];
+
+            for(let i = cols; i > 0; i--) {
+                const colDiv = document.createElement('div'); colDiv.className = 'pyramid-col';
+                for(let j = 0; j < i; j++) {
+                    const c = deck.pop();
+                    const cardDiv = document.createElement('div');
+                    cardDiv.className = 'p-card';
+                    const isHoriz = Math.random() < 0.25;
+                    if(isHoriz) cardDiv.classList.add('horizontal');
+                    
+                    const level = cols - i + 1;
+                    const mult = isHoriz ? 2 : 1;
+                    
+                    let pCardData = { value: c.v, code: c.code, level: level, mult: mult, dom: cardDiv, stackCount: 0 };
+                    pyramidSequence.push(pCardData);
+                    colDiv.appendChild(cardDiv);
+                }
+                area.appendChild(colDiv);
+            }
+
+            players.forEach((p, pIdx) => {
+                const dock = document.createElement('div'); dock.className = 'player-dock';
+                dock.style.top = (pIdx % 2 === 0) ? '5%' : '80%';
+                dock.style.left = (5 + (pIdx * 18)) + '%';
+
+                const nameTag = document.createElement('div'); nameTag.className = 'dock-name'; nameTag.innerText = p.name;
+                const cardsWrap = document.createElement('div'); cardsWrap.className = 'dock-cards';
+                
+                p.hand.forEach((cardObj, cIdx) => {
+                    const cDiv = document.createElement('div'); cDiv.className = 'dock-card'; cDiv.innerText = cIdx + 1;
+                    cDiv.id = `card-${pIdx}-${cIdx}`;
+                    cDiv.onclick = () => startPlayAction(pIdx, cIdx);
+                    cardsWrap.appendChild(cDiv);
+                });
+
+                dock.appendChild(nameTag); dock.appendChild(cardsWrap);
+                document.getElementById('pyramid-screen').appendChild(dock);
+                makeDraggable(dock);
+            });
+            
+            currentPyramidIdx = -1;
+        }
+
+        function nextPyramidCard() {
+            if(currentPyramidIdx >= pyramidSequence.length - 1) {
+                return checkPetitBus(); 
+            }
+            if(currentPyramidIdx >= 0) pyramidSequence[currentPyramidIdx].dom.classList.remove('active-p-card');
+            
+            currentPyramidIdx++;
+            lastPlayedThisTurn = []; 
+            
+            let pCard = pyramidSequence[currentPyramidIdx];
+            pCard.dom.classList.add('active-p-card');
+            pCard.dom.style.background = `url(https://deckofcardsapi.com/static/img/${pCard.code.replace('10','0')}.png) center/cover`;
+        }
+
+        function prevPyramidCard() {
+            if(currentPyramidIdx > 0) {
+                pyramidSequence[currentPyramidIdx].dom.classList.remove('active-p-card');
+                currentPyramidIdx--;
+                pyramidSequence[currentPyramidIdx].dom.classList.add('active-p-card');
+            }
+        }
+
+        // ==========================
+        // MÉCANIQUE DE JEU
+        // ==========================
+        function startPlayAction(pIdx, cIdx) {
+            if(currentPyramidIdx === -1) return alert("Passez à la première carte avec la flèche de droite !");
+            if(players[pIdx].hand[cIdx].played) return;
+            
+            actionState.attackerIdx = pIdx; actionState.cardIdx = cIdx;
+            document.getElementById('target-title').innerText = `${players[pIdx].name} attaque :`;
+            const list = document.getElementById('target-list'); list.innerHTML = '';
+            
+            players.forEach((p, i) => {
+                if(i !== pIdx) {
+                    const btn = document.createElement('button'); btn.className = 'target-btn'; btn.innerText = p.name;
+                    btn.onclick = () => selectTarget(i); list.appendChild(btn);
+                }
+            });
+            document.getElementById('modal-target').classList.remove('hidden');
+        }
+
+        function selectTarget(tIdx) {
+            actionState.targetIdx = tIdx;
+            document.getElementById('modal-target').classList.add('hidden');
+            document.getElementById('reaction-desc').innerHTML = `${players[actionState.attackerIdx].name} vise ${players[tIdx].name}.<br>Que fais-tu ?`;
+            document.getElementById('modal-reaction').classList.remove('hidden');
+        }
+
+        function handleReaction(isAccepted) {
+            document.getElementById('modal-reaction').classList.add('hidden');
+            const attacker = players[actionState.attackerIdx]; const target = players[actionState.targetIdx];
+            const playedCard = attacker.hand[actionState.cardIdx];
+            const currentPyramidCard = pyramidSequence[currentPyramidIdx];
+            const sips = currentPyramidCard.level * currentPyramidCard.mult;
+            
+            playedCard.played = true;
+            document.getElementById(`card-${actionState.attackerIdx}-${actionState.cardIdx}`).classList.add('played');
+
+            const resTitle = document.getElementById('result-title');
+            const resDesc = document.getElementById('result-desc');
+            const resImg = document.getElementById('result-card-display');
+            
+            let keepCardOnPyramid = false; let faceUp = false;
+
+            if(isAccepted) {
+                resTitle.innerText = "JUSTE"; resTitle.style.color = "#00b894"; resImg.innerHTML = ''; 
+                resDesc.innerHTML = `${target.name} boit <b>${sips} gorgée(s)</b>.`;
+                keepCardOnPyramid = true; faceUp = false;
+                lastPlayedThisTurn.push(attacker.name); 
+            } else {
+                let apiCode = playedCard.code.replace('10', '0');
+                resImg.innerHTML = `<img src="https://deckofcardsapi.com/static/img/${apiCode}.png" style="height:90px; border-radius:5px;">`;
+                
+                if(playedCard.v === currentPyramidCard.value) {
+                    resTitle.innerText = "JUSTE"; resTitle.style.color = "#00b894";
+                    resDesc.innerHTML = `Pas de mensonge ! ${target.name} prend <b>${sips * 2} gorgées</b> !`;
+                    keepCardOnPyramid = true; faceUp = true;
+                    lastPlayedThisTurn.push(attacker.name); 
+                } else {
+                    resTitle.innerText = "RATÉ"; resTitle.style.color = "#d63031";
+                    resDesc.innerHTML = `Bluff raté ! ${attacker.name} boit <b>${sips * 2} gorgées</b> !<br><small style="color:gray;">(La carte retourne dans sa main)</small>`;
+                    playedCard.played = false; 
+                    document.getElementById(`card-${actionState.attackerIdx}-${actionState.cardIdx}`).classList.remove('played');
+                }
+            }
+
+            if(keepCardOnPyramid) {
+                let stackDiv = document.createElement('div'); stackDiv.className = 'stacked-card';
+                let offset = (currentPyramidCard.stackCount) * 8; 
+                stackDiv.style.transform = `translate(${offset}px, -${offset}px)`;
+                stackDiv.style.background = faceUp ? `url(https://deckofcardsapi.com/static/img/${playedCard.code.replace('10','0')}.png) center/cover` : `url(https://deckofcardsapi.com/static/img/back.png) center/cover`;
+                currentPyramidCard.dom.appendChild(stackDiv);
+                currentPyramidCard.stackCount++;
+            }
+
+            document.getElementById('modal-result').classList.remove('hidden');
+        }
+
+        function closeModals() { document.getElementById('modal-target').classList.add('hidden'); document.getElementById('modal-reaction').classList.add('hidden'); }
+        function closeResult() { document.getElementById('modal-result').classList.add('hidden'); }
+
+        // ==========================
+        // LE PETIT BUS (FIN DE JEU)
+        // ==========================
+        function checkPetitBus() {
+            let maxCards = -1;
+            let losers = [];
+            
+            players.forEach(p => {
+                let remaining = p.hand.filter(c => !c.played).length;
+                if(remaining > maxCards) { maxCards = remaining; losers = [p.name]; }
+                else if(remaining === maxCards) { losers.push(p.name); }
+            });
+
+            if(maxCards === 0) {
+                losers = [...new Set(lastPlayedThisTurn)]; 
+                if(losers.length === 0) losers = ["Personne ? Étrange !"]; 
+            }
+
+            alert("🚌 DING DING ! Le Petit Bus attend : \n" + losers.join(' et '));
+        }
+
+        // DRAG & DROP MOBILE (Docks)
+        function makeDraggable(elmnt) {
+            var pos1 = 0, pos2 = 0, pos3 = 0, pos4 = 0;
+            elmnt.onmousedown = dragMouseDown; elmnt.ontouchstart = dragMouseDown;
+            function dragMouseDown(e) {
+                if(e.target.classList.contains('dock-card')) return; e.preventDefault();
+                pos3 = e.type === 'touchstart' ? e.touches[0].clientX : e.clientX; pos4 = e.type === 'touchstart' ? e.touches[0].clientY : e.clientY;
+                document.onmouseup = closeDragElement; document.ontouchend = closeDragElement; document.onmousemove = elementDrag; document.ontouchmove = elementDrag;
+            }
+            function elementDrag(e) {
+                e.preventDefault(); let clientX = e.type === 'touchmove' ? e.touches[0].clientX : e.clientX; let clientY = e.type === 'touchmove' ? e.touches[0].clientY : e.clientY;
+                pos1 = pos3 - clientX; pos2 = pos4 - clientY; pos3 = clientX; pos4 = clientY;
+                elmnt.style.top = (elmnt.offsetTop - pos2) + "px"; elmnt.style.left = (elmnt.offsetLeft - pos1) + "px";
+            }
+            function closeDragElement() { document.onmouseup = null; document.onmousemove = null; document.ontouchend = null; document.ontouchmove = null; }
+        }
+    </script>
+</body>
+</html>
