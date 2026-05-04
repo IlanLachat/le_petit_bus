@@ -2,8 +2,10 @@
 <html lang="fr">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Le Petit Bus 🚌 - Édition Finale</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, minimal-ui">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <title>Le Petit Bus 🚌</title>
     <style>
         :root {
             --primary: #ff2e63;
@@ -37,8 +39,9 @@
         /* Pyramide Horizontale */
         #pyramid-screen { width: 100vw; height: 100vh; position: relative; }
         .pyramid-wrapper {
-            position: absolute; top: 45%; left: 50%; transform: translate(-50%, -50%);
+            position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
             display: flex; flex-direction: row; align-items: center; justify-content: center; gap: 12px;
+            transition: transform 0.3s ease;
         }
         .pyramid-col { display: flex; flex-direction: column; gap: 10px; }
         
@@ -56,15 +59,17 @@
             background-size: cover !important; box-shadow: 2px 2px 5px rgba(0,0,0,0.8); pointer-events: none;
         }
 
-        /* Navigation Pyramide */
+        /* Navigation Pyramide - Écartée sur les bords */
         #pyramid-nav {
-            position: absolute; bottom: 20px; left: 50%; transform: translateX(-50%);
-            display: flex; gap: 20px; z-index: 50;
+            position: absolute; bottom: 20px; left: 0; width: 100vw;
+            display: flex; justify-content: space-between; padding: 0 20px;
+            box-sizing: border-box; z-index: 50; pointer-events: none;
         }
         .nav-btn {
             background: var(--card-bg); border: 2px solid var(--secondary); color: white;
-            width: 60px; height: 60px; border-radius: 50%; font-size: 24px; cursor: pointer;
+            width: 50px; height: 50px; border-radius: 50%; font-size: 20px; cursor: pointer;
             backdrop-filter: blur(5px); display: flex; align-items: center; justify-content: center;
+            pointer-events: auto; /* Réactive le clic sur les boutons */
         }
         .nav-btn:active { background: var(--secondary); color: black; }
 
@@ -110,6 +115,13 @@
         .hidden { display: none !important; }
         .highlight { color: var(--secondary); font-weight: bold; }
         .mode-active { background: var(--secondary) !important; color: black !important; }
+
+        /* FIX POUR LES PETITS ÉCRANS (Safari qui prend de la place) */
+        @media (max-height: 450px) {
+            .pyramid-wrapper { transform: translate(-50%, -50%) scale(0.65); }
+            #pyramid-nav { bottom: 10px; padding: 0 10px; }
+            .nav-btn { width: 45px; height: 45px; }
+        }
     </style>
 </head>
 <body>
@@ -117,6 +129,7 @@
     <div id="setup" class="container">
         <h1>LE PETIT BUS 🚌</h1>
         <p>Jeu de 36 cartes. Tournez le téléphone.</p>
+        <p style="color:var(--secondary); font-size:12px;">💡 Astuce : Ajoutez ce site à l'écran d'accueil pour jouer en plein écran !</p>
         <input type="text" id="player-names" placeholder="Ex: Alex, Tom, Julie" style="width: 80%; padding: 10px; border-radius: 10px; border: none; margin-bottom: 10px; text-align: center;">
         <button onclick="initGame()">Commencer</button>
     </div>
